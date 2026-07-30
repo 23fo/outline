@@ -1,5 +1,4 @@
 import { signin } from "@shared/utils/routeHelpers";
-import env from "@server/env";
 import type { Plugin, Hook } from "@server/utils/PluginManager";
 
 export default function presentProviderConfig(
@@ -8,6 +7,6 @@ export default function presentProviderConfig(
   return {
     id: config.value.id,
     name: config.name,
-    authUrl: `${env.basePath}${signin(config.value.id)}`,
+    authUrl: signin(config.value.id),
   };
 }
