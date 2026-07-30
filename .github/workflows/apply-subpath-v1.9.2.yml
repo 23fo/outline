@@ -1,0 +1,38 @@
+name: Apply subpath support to v1.9.2
+
+on:
+  push:
+    branches:
+      - agent/outline-v1.9.2-subpath
+
+permissions:
+  contents: write
+
+jobs:
+  apply-patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Reconstruct and validate patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .github/subpath-patch/part* | base64 --decode | gzip --decompress > /tmp/outline-subpath.patch
+          git apply --check /tmp/outline-subpath.patch
+
+      - name: Apply and commit patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git apply /tmp/outline-subpath.patch
+          rm -rf .github/subpath-patch
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat: support deployment under a URL subpath"
+          git push origin HEAD:${GITHUB_REF_NAME}
