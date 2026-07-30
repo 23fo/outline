@@ -2,16 +2,14 @@ name: Build subpath Docker image
 
 on:
   push:
-    branches:
-      - "v1.9.2-with-subpath"
     tags:
-      - "v*.*.*-with-subpath-v*"
+      - "v*.*.*-subpath-support-v*"
   workflow_dispatch:
     inputs:
       image_tag:
-        description: "Image tag, for example v1.9.2-with-subpath-v1"
+        description: "Image tag, for example v1.9.2-subpath-support-v1"
         required: true
-        default: "v1.9.2-with-subpath-v1"
+        default: "v1.9.2-subpath-support-v1"
         type: string
 
 permissions:
@@ -40,17 +38,13 @@ jobs:
         run: |
           if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
             tag="${DISPATCH_TAG}"
-          elif [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
-            tag="${GITHUB_REF_NAME}"
           else
-            version="${GITHUB_REF_NAME#v}"
-            version="${version%-with-subpath}"
-            tag="v${version}-with-subpath-v${GITHUB_RUN_NUMBER}"
+            tag="${GITHUB_REF_NAME}"
           fi
 
-          if [[ ! "${tag}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-with-subpath-v[0-9]+$ ]]; then
+          if [[ ! "${tag}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-subpath-support-v[0-9]+$ ]]; then
             echo "Invalid image tag: ${tag}" >&2
-            echo "Expected vX.Y.Z-with-subpath-vN" >&2
+            echo "Expected vX.Y.Z-subpath-support-vN" >&2
             exit 1
           fi
 
