@@ -4,13 +4,34 @@ import { isBrowser } from "./browser";
 import { parseDomain } from "./domains";
 
 /**
- * Prepends the CDN url to the given path (If a CDN is configured).
+ * Returns the base URL for app-served assets. A CDN takes precedence; without
+ * one, assets are served under the runtime app base path.
  *
- * @param path The path to prepend the CDN url to.
- * @returns The path with the CDN url prepended.
+ * @returns the asset base URL without a trailing slash.
+ */
+function assetBaseUrl(): string {
+  if (env.CDN_URL) {
+    return env.CDN_URL;
+  }
+  if (typeof env.BASE_PATH === "string") {
+    return env.BASE_PATH;
+  }
+  try {
+    const pathname = new URL(env.URL).pathname.replace(/\/+$/, "");
+    return pathname === "/" ? "" : pathname;
+  } catch (_err) {
+    return "";
+  }
+}
+
+/**
+ * Prepends the asset base URL to the given path.
+ *
+ * @param path The path to prepend the asset base URL to.
+ * @returns The path with the asset base URL prepended.
  */
 export function cdnPath(path: string): string {
-  return `${env.CDN_URL ?? ""}${path}`;
+  return `${assetBaseUrl()}${path}`;
 }
 
 /**
