@@ -80,8 +80,34 @@ export default function init(app: Koa = new Koa(), server?: Server) {
     Metrics.gaugePerInstance("connections.count", 0);
   });
 
-  app.use(mount("/api", api));
-  app.use(mount("/mcp", mcp));
+  const basePath = env.basePath;
+
+  // Koa routes are intentionally defined relative to their mounted application.
+  // Normalize any root-relative Location header after route handling so redirects
+  // from authentication, plugins, and APIs remain inside the configured subpath.
+  app.use(async (ctx, next) => {
+    await next();
+
+    if (!basePath) {
+      return;
+    }
+
+    const location = ctx.response.get("Location");
+    if (
+      !location ||
+      !location.startsWith("/") ||
+      location.startsWith("//") ||
+      location === basePath ||
+      location.startsWith(`${basePath}/`)
+    ) {
+      return;
+    }
+
+    ctx.set("Location", `${basePath}${location}`);
+  });
+
+  app.use(mount(`${basePath}/api`, api));
+  app.use(mount(`${basePath}/mcp`, mcp));
 
   // Generate and attach a CSRF token to the session on non-API requests
   app.use(attachCSRFToken());
@@ -102,9 +128,9 @@ export default function init(app: Koa = new Koa(), server?: Server) {
     })
   );
 
-  app.use(mount("/auth", auth));
-  app.use(mount("/oauth", oauth));
-  app.use(mount(routes));
+  app.use(mount(`${basePath}/auth`, auth));
+  app.use(mount(`${basePath}/oauth`, oauth));
+  app.use(basePath ? mount(basePath, routes) : mount(routes));
 
   return app;
 }

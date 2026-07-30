@@ -8,6 +8,7 @@ import {
   dataUrlToFile,
 } from "../../utils/files";
 import { fileNameFromUrl, isInternalUrl } from "../../utils/urls";
+import { withBasePath } from "../../utils/subpath";
 import type { Options } from "../commands/insertFiles";
 import insertFiles from "../commands/insertFiles";
 import FileHelper from "../lib/FileHelper";
@@ -145,7 +146,9 @@ export class UploadPlugin extends Plugin {
               !isInternalUrl(node.attrs.src)
             ) {
               const id = uuidv4();
-              const redirectUrl = `/api/attachments.redirect?id=${id}`;
+              const redirectUrl = withBasePath(
+                `/api/attachments.redirect?id=${id}`
+              );
               uploads.push({
                 originalSrc: node.attrs.src,
                 searchSrc: redirectUrl,

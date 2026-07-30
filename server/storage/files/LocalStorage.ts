@@ -43,11 +43,11 @@ export default class LocalStorage extends BaseStorage {
   }
 
   public getUploadUrl() {
-    return "/api/files.create";
+    return `${env.basePath}/api/files.create`;
   }
 
   public getUrlForKey(key: string): string {
-    return `/api/files.get?key=${key}`;
+    return `${env.basePath}/api/files.get?key=${key}`;
   }
 
   public store = async ({
@@ -178,7 +178,7 @@ export default class LocalStorage extends BaseStorage {
   private getFilePath(key: string) {
     invariant(
       env.FILE_STORAGE_LOCAL_ROOT_DIR,
-      "FILE_STORAGE_LOCAL_ROOT_DIR is required"
+      "FILE_STORAGE_LOCAL_ROOT_DIR is not configured"
     );
 
     return safeResolvePath(env.FILE_STORAGE_LOCAL_ROOT_DIR, key);
