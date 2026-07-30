@@ -31,10 +31,11 @@ export async function navigateToSubdomain(subdomain: string) {
 }
 
 /**
- * Normalize a user-entered host into an origin URL, defaulting to https.
+ * Normalize a user-entered host into a URL, defaulting to https and preserving
+ * an optional application subpath.
  *
  * @param input The host entered by the user.
- * @returns the normalized origin (e.g. "https://app.getoutline.com").
+ * @returns the normalized URL (e.g. "https://example.com/outline").
  * @throws if the input cannot be parsed into a valid URL.
  */
 export function normalizeHost(input: string): string {
@@ -42,7 +43,10 @@ export function normalizeHost(input: string): string {
   const withProtocol = /^https?:\/\//i.test(trimmed)
     ? trimmed
     : `https://${trimmed}`;
-  return new URL(withProtocol).origin;
+  const url = new URL(withProtocol);
+  const pathname = url.pathname.replace(/\/+$/, "");
+
+  return `${url.origin}${pathname === "/" ? "" : pathname}`;
 }
 
 /**
@@ -51,28 +55,28 @@ export function normalizeHost(input: string): string {
  * to bypass renderer CORS restrictions.
  *
  * @param input The host entered by the user.
- * @returns the normalized origin of the validated installation.
+ * @returns the normalized URL of the validated installation.
  * @throws if the host is unreachable or not an Outline installation.
  */
 export async function validateHost(input: string): Promise<string> {
-  const origin = normalizeHost(input);
+  const host = normalizeHost(input);
 
   if (!Desktop.bridge?.loadAuthConfig) {
     throw new Error("Host validation is unavailable");
   }
 
-  const config = await Desktop.bridge.loadAuthConfig(origin);
+  const config = await Desktop.bridge.loadAuthConfig(host);
   if (!Array.isArray(config?.providers)) {
     throw new Error("Host is not an Outline installation");
   }
 
-  return origin;
+  return host;
 }
 
 /**
  * Set the given host in desktop config and navigate to it.
  *
- * @param host The normalized origin to switch to.
+ * @param host The normalized URL to switch to.
  */
 export async function navigateToHost(host: string) {
   await Desktop.bridge?.addCustomHost(host);

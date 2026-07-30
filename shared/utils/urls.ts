@@ -2,6 +2,7 @@ import { escapeRegExp } from "es-toolkit/compat";
 import env from "../env";
 import { isBrowser } from "./browser";
 import { parseDomain } from "./domains";
+import { getBasePath, withoutBasePath } from "./subpath";
 
 /**
  * Returns the base URL for app-served assets. A CDN takes precedence; without
@@ -10,18 +11,7 @@ import { parseDomain } from "./domains";
  * @returns the asset base URL without a trailing slash.
  */
 function assetBaseUrl(): string {
-  if (env.CDN_URL) {
-    return env.CDN_URL;
-  }
-  if (typeof env.BASE_PATH === "string") {
-    return env.BASE_PATH;
-  }
-  try {
-    const pathname = new URL(env.URL).pathname.replace(/\/+$/, "");
-    return pathname === "/" ? "" : pathname;
-  } catch (_err) {
-    return "";
-  }
+  return env.CDN_URL || getBasePath();
 }
 
 /**
@@ -88,9 +78,10 @@ export function isInternalUrl(href: string) {
 export function isDocumentUrl(url: string) {
   try {
     const parsed = new URL(url, env.URL);
+    const pathname = withoutBasePath(parsed.pathname);
     return (
       isInternalUrl(url) &&
-      (parsed.pathname.startsWith("/doc/") || parsed.pathname.startsWith("/d/"))
+      (pathname.startsWith("/doc/") || pathname.startsWith("/d/"))
     );
   } catch (_err) {
     return false;
@@ -106,7 +97,10 @@ export function isDocumentUrl(url: string) {
 export function isCollectionUrl(url: string) {
   try {
     const parsed = new URL(url, env.URL);
-    return isInternalUrl(url) && parsed.pathname.startsWith("/collection/");
+    return (
+      isInternalUrl(url) &&
+      withoutBasePath(parsed.pathname).startsWith("/collection/")
+    );
   } catch (_err) {
     return false;
   }
@@ -148,7 +142,6 @@ export function isUrl(
   try {
     const url = new URL(text);
     const blockedProtocols = ["javascript:", "file:", "vbscript:", "data:"];
-
     if (blockedProtocols.includes(url.protocol)) {
       return false;
     }

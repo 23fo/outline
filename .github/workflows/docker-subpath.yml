@@ -3,10 +3,16 @@ name: Build subpath Docker image
 on:
   push:
     branches:
-      - agent/outline-v1.9.2-subpath
+      - "v1.9.2-with-subpath"
     tags:
-      - "v*-subpath*"
+      - "v*.*.*-with-subpath-v*"
   workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag, for example v1.9.2-with-subpath-v1"
+        required: true
+        default: "v1.9.2-with-subpath-v1"
+        type: string
 
 permissions:
   contents: read
@@ -18,7 +24,6 @@ concurrency:
 
 env:
   IMAGE_NAME: ghcr.io/23fo/outline
-  BASE_IMAGE_NAME: ghcr.io/23fo/outline-base
 
 jobs:
   build:
@@ -27,6 +32,29 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v5
+
+      - name: Resolve and validate image tag
+        id: image
+        env:
+          DISPATCH_TAG: ${{ inputs.image_tag }}
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            tag="${DISPATCH_TAG}"
+          elif [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            tag="${GITHUB_REF_NAME}"
+          else
+            version="${GITHUB_REF_NAME#v}"
+            version="${version%-with-subpath}"
+            tag="v${version}-with-subpath-v${GITHUB_RUN_NUMBER}"
+          fi
+
+          if [[ ! "${tag}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-with-subpath-v[0-9]+$ ]]; then
+            echo "Invalid image tag: ${tag}" >&2
+            echo "Expected vX.Y.Z-with-subpath-vN" >&2
+            exit 1
+          fi
+
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -41,62 +69,36 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Generate base image metadata
-        id: base_meta
-        uses: docker/metadata-action@v6
-        with:
-          images: ${{ env.BASE_IMAGE_NAME }}
-          tags: |
-            type=raw,value=1.9.2-subpath
-            type=raw,value=subpath-latest
-            type=sha,prefix=subpath-
-            type=ref,event=tag
-
-      - name: Build and publish base image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: Dockerfile.base
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.base_meta.outputs.tags }}
-          labels: ${{ steps.base_meta.outputs.labels }}
-          cache-from: type=gha,scope=outline-subpath-base
-          cache-to: type=gha,mode=max,scope=outline-subpath-base
-
-      - name: Generate application image metadata
-        id: app_meta
+      - name: Generate image metadata
+        id: meta
         uses: docker/metadata-action@v6
         with:
           images: ${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=1.9.2-subpath
-            type=raw,value=subpath-latest
-            type=sha,prefix=subpath-
-            type=ref,event=tag
+            type=raw,value=${{ steps.image.outputs.tag }}
+          labels: |
+            org.opencontainers.image.version=${{ steps.image.outputs.tag }}
+            org.opencontainers.image.source=https://github.com/23fo/outline
 
-      - name: Build and publish application image
-        id: app_build
+      - name: Build and publish image
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: Dockerfile
+          file: Dockerfile.subpath
           platforms: linux/amd64,linux/arm64
           push: true
-          build-args: |
-            BASE_IMAGE=${{ env.BASE_IMAGE_NAME }}:1.9.2-subpath
-          tags: ${{ steps.app_meta.outputs.tags }}
-          labels: ${{ steps.app_meta.outputs.labels }}
-          cache-from: type=gha,scope=outline-subpath-app
-          cache-to: type=gha,mode=max,scope=outline-subpath-app
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=outline-subpath
+          cache-to: type=gha,mode=max,scope=outline-subpath
 
       - name: Publish build summary
         run: |
           {
             echo "## Docker image published"
             echo
-            echo "- Image: \`${IMAGE_NAME}:1.9.2-subpath\`"
-            echo "- Rolling tag: \`${IMAGE_NAME}:subpath-latest\`"
+            echo "- Image: \`${IMAGE_NAME}:${{ steps.image.outputs.tag }}\`"
             echo "- Platforms: \`linux/amd64\`, \`linux/arm64\`"
-            echo "- Digest: \`${{ steps.app_build.outputs.digest }}\`"
+            echo "- Digest: \`${{ steps.build.outputs.digest }}\`"
           } >> "$GITHUB_STEP_SUMMARY"

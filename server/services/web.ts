@@ -82,6 +82,30 @@ export default function init(app: Koa = new Koa(), server?: Server) {
 
   const basePath = env.basePath;
 
+  // Koa routes are intentionally defined relative to their mounted application.
+  // Normalize any root-relative Location header after route handling so redirects
+  // from authentication, plugins, and APIs remain inside the configured subpath.
+  app.use(async (ctx, next) => {
+    await next();
+
+    if (!basePath) {
+      return;
+    }
+
+    const location = ctx.response.get("Location");
+    if (
+      !location ||
+      !location.startsWith("/") ||
+      location.startsWith("//") ||
+      location === basePath ||
+      location.startsWith(`${basePath}/`)
+    ) {
+      return;
+    }
+
+    ctx.set("Location", `${basePath}${location}`);
+  });
+
   app.use(mount(`${basePath}/api`, api));
   app.use(mount(`${basePath}/mcp`, mcp));
 
