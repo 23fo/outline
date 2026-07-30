@@ -57,6 +57,8 @@ function SharedSidebar({ share }: Props) {
 
   useEffect(() => {
     ui.tocVisible = share.showTOC;
+    // Only seed the initial visibility, the user can toggle it afterwards.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!rootNode?.children.length) {
@@ -159,6 +161,7 @@ const SearchLabel = styled.span`
 const Shortcut = styled.span`
   flex-shrink: 0;
   font-size: 13px;
+  font-feature-settings: "cv08", "zero";
 `;
 
 export default observer(SharedSidebar);
