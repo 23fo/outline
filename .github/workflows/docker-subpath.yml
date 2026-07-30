@@ -6,6 +6,10 @@ on:
       - agent/outline-v1.9.2-subpath
     tags:
       - "v*-subpath*"
+  pull_request:
+    branches:
+      - agent/outline-v1.9.2-subpath
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
 
 permissions:
@@ -27,6 +31,8 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref || github.ref }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
