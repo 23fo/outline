@@ -67,7 +67,7 @@ class ApiClient {
   private onUnauthorized?: UnauthorizedHandler;
 
   constructor(options: Options = {}) {
-    this.baseUrl = options.baseUrl || "/api";
+    this.baseUrl = options.baseUrl || `${env.BASE_PATH}/api`;
   }
 
   /**

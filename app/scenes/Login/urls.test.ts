@@ -13,12 +13,12 @@ describe("normalizeHost", () => {
     );
   });
 
-  it("strips paths and trailing slashes", () => {
+  it("preserves paths and strips trailing slashes", () => {
     expect(normalizeHost("https://docs.example.com/")).toBe(
       "https://docs.example.com"
     );
-    expect(normalizeHost("docs.example.com/login")).toBe(
-      "https://docs.example.com"
+    expect(normalizeHost("docs.example.com/outline/")).toBe(
+      "https://docs.example.com/outline"
     );
   });
 

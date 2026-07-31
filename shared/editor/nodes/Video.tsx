@@ -8,7 +8,7 @@ import type {
 import { NodeSelection, TextSelection } from "prosemirror-state";
 import * as React from "react";
 import type { Primitive } from "utility-types";
-import { sanitizeUrl } from "../../utils/urls";
+import { sanitizeResourceUrl } from "../../utils/resourceUrl";
 import toggleWrap from "../commands/toggleWrap";
 import Caption from "../components/Caption";
 import VideoComponent from "../components/Video";
@@ -79,7 +79,7 @@ export default class Video extends Node {
           "video",
           {
             id: node.attrs.id,
-            src: sanitizeUrl(node.attrs.src),
+            src: sanitizeResourceUrl(node.attrs.src),
             controls: true,
             width: node.attrs.width,
             height: node.attrs.height,
