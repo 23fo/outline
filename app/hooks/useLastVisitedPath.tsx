@@ -20,22 +20,17 @@ export function useLastVisitedPath(): [string, (path: string) => void] {
     "/",
     { listen: false }
   );
-  const normalizedLastVisitedPath = withoutBasePath(lastVisitedPath);
 
   const setPathAsLastVisitedPath = useCallback(
     (path: string) => {
-      const normalizedPath = withoutBasePath(path);
-      if (
-        isAllowedLoginRedirect(normalizedPath) &&
-        normalizedPath !== normalizedLastVisitedPath
-      ) {
-        setLastVisitedPath(normalizedPath);
+      if (isAllowedLoginRedirect(path) && path !== lastVisitedPath) {
+        setLastVisitedPath(path);
       }
     },
-    [normalizedLastVisitedPath, setLastVisitedPath]
+    [lastVisitedPath, setLastVisitedPath]
   );
 
-  return [normalizedLastVisitedPath, setPathAsLastVisitedPath] as const;
+  return [lastVisitedPath, setPathAsLastVisitedPath] as const;
 }
 
 /**
@@ -47,15 +42,13 @@ export function useLastVisitedPath(): [string, (path: string) => void] {
  */
 export function useTrackLastVisitedPath(currentPath: string): void {
   const prevPathRef = useRef<string>();
-  const normalizedPath = withoutBasePath(currentPath);
 
-  // Update localStorage directly if path has changed
   if (
-    prevPathRef.current !== normalizedPath &&
-    isAllowedLoginRedirect(normalizedPath)
+    prevPathRef.current !== currentPath &&
+    isAllowedLoginRedirect(currentPath)
   ) {
-    prevPathRef.current = normalizedPath;
-    setPersistedState("lastVisitedPath", normalizedPath);
+    prevPathRef.current = currentPath;
+    setPersistedState("lastVisitedPath", currentPath);
   }
 }
 
@@ -97,10 +90,7 @@ export function usePostLoginPath() {
     }
 
     if (path) {
-      const normalizedPath = withoutBasePath(path);
-      Logger.info("lifecycle", "Spending post login path", {
-        path: normalizedPath,
-      });
+      Logger.info("lifecycle", "Spending post login path", { path });
 
       // Remove the cookie once the app has been navigated to the post login path. We dont
       // do this immediately as React StrictMode will render multiple times.
@@ -114,8 +104,8 @@ export function usePostLoginPath() {
         cleanup?.();
       });
 
-      if (isAllowedLoginRedirect(normalizedPath)) {
-        return normalizedPath;
+      if (isAllowedLoginRedirect(path)) {
+        return path;
       }
     }
 

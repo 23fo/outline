@@ -1,15 +1,12 @@
 name: Build subpath Docker image
 
 on:
-  push:
-    tags:
-      - "v*.*.*-subpath-support-v*"
   workflow_dispatch:
     inputs:
-      image_tag:
-        description: "Image tag, for example v1.9.2-subpath-support-v1"
+      image_revision:
+        description: "Image revision suffix"
         required: true
-        default: "v1.9.2-subpath-support-v1"
+        default: "v1"
         type: string
 
 permissions:
@@ -17,11 +14,12 @@ permissions:
   packages: write
 
 concurrency:
-  group: docker-subpath-${{ github.ref }}
-  cancel-in-progress: true
+  group: docker-subpath-${{ github.ref }}-${{ inputs.image_revision }}
+  cancel-in-progress: false
 
 env:
   IMAGE_NAME: ghcr.io/23fo/outline
+  BASE_IMAGE_NAME: ghcr.io/23fo/outline-base
 
 jobs:
   build:
@@ -31,24 +29,27 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v5
 
-      - name: Resolve and validate image tag
+      - name: Resolve image tag
         id: image
         env:
-          DISPATCH_TAG: ${{ inputs.image_tag }}
+          IMAGE_REVISION: ${{ inputs.image_revision }}
         run: |
-          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
-            tag="${DISPATCH_TAG}"
-          else
-            tag="${GITHUB_REF_NAME}"
-          fi
+          ref="${GITHUB_REF_NAME}"
+          revision="${IMAGE_REVISION}"
 
-          if [[ ! "${tag}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-subpath-support-v[0-9]+$ ]]; then
-            echo "Invalid image tag: ${tag}" >&2
-            echo "Expected vX.Y.Z-subpath-support-vN" >&2
+          if [[ ! "${ref}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-subpath-support$ ]]; then
+            echo "Invalid source ref: ${ref}" >&2
+            echo "Expected vX.Y.Z-subpath-support" >&2
             exit 1
           fi
 
-          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          if [[ ! "${revision}" =~ ^v[0-9]+$ ]]; then
+            echo "Invalid image revision: ${revision}" >&2
+            echo "Expected vN" >&2
+            exit 1
+          fi
+
+          echo "tag=${ref}-${revision}" >> "$GITHUB_OUTPUT"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -62,6 +63,17 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and publish base image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.base
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ env.BASE_IMAGE_NAME }}:${{ steps.image.outputs.tag }}
+          cache-from: type=gha,scope=outline-subpath-base
+          cache-to: type=gha,mode=max,scope=outline-subpath-base
 
       - name: Generate image metadata
         id: meta
@@ -79,9 +91,11 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: Dockerfile.subpath
+          file: Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
+          build-args: |
+            BASE_IMAGE=${{ env.BASE_IMAGE_NAME }}:${{ steps.image.outputs.tag }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=outline-subpath
@@ -92,6 +106,7 @@ jobs:
           {
             echo "## Docker image published"
             echo
+            echo "- Source ref: \`${GITHUB_REF_NAME}\`"
             echo "- Image: \`${IMAGE_NAME}:${{ steps.image.outputs.tag }}\`"
             echo "- Platforms: \`linux/amd64\`, \`linux/arm64\`"
             echo "- Digest: \`${{ steps.build.outputs.digest }}\`"

@@ -212,7 +212,7 @@ router.get("/doc/:documentSlug", async (ctx, next) => {
 
 router.get("/sitemap.xml", async (ctx) => {
   if (ctx.state?.rootShare) {
-    ctx.redirect(`${env.basePath}/api/shares.sitemap?id=${ctx.state?.rootShare.id}`);
+    ctx.redirect(`/api/shares.sitemap?id=${ctx.state?.rootShare.id}`);
   } else {
     ctx.status = 404;
   }

@@ -22,7 +22,6 @@ import {
   BeforeUpdate,
 } from "sequelize-typescript";
 import { errToString } from "@shared/utils/error";
-import env from "@server/env";
 import { ValidationError } from "@server/errors";
 import FileStorage from "@server/storage/files";
 import { ValidateKey } from "@server/validation";
@@ -239,7 +238,7 @@ class Attachment extends IdModel<
    * @returns The redirect URL for the attachment.
    */
   static getRedirectUrl(id: string) {
-    return `${env.basePath}/api/attachments.redirect?id=${id}`;
+    return `/api/attachments.redirect?id=${id}`;
   }
 
   // associations
