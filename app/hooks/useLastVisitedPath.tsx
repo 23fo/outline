@@ -1,5 +1,6 @@
 import { useCallback, useRef } from "react";
 import { getCookie, removeCookie, setCookie } from "tiny-cookie";
+import { withoutBasePath } from "@shared/utils/subpath";
 import usePersistedState, {
   setPersistedState,
 } from "~/hooks/usePersistedState";
@@ -19,17 +20,22 @@ export function useLastVisitedPath(): [string, (path: string) => void] {
     "/",
     { listen: false }
   );
+  const normalizedLastVisitedPath = withoutBasePath(lastVisitedPath);
 
   const setPathAsLastVisitedPath = useCallback(
     (path: string) => {
-      if (isAllowedLoginRedirect(path) && path !== lastVisitedPath) {
-        setLastVisitedPath(path);
+      const normalizedPath = withoutBasePath(path);
+      if (
+        isAllowedLoginRedirect(normalizedPath) &&
+        normalizedPath !== normalizedLastVisitedPath
+      ) {
+        setLastVisitedPath(normalizedPath);
       }
     },
-    [lastVisitedPath, setLastVisitedPath]
+    [normalizedLastVisitedPath, setLastVisitedPath]
   );
 
-  return [lastVisitedPath, setPathAsLastVisitedPath] as const;
+  return [normalizedLastVisitedPath, setPathAsLastVisitedPath] as const;
 }
 
 /**
@@ -41,14 +47,15 @@ export function useLastVisitedPath(): [string, (path: string) => void] {
  */
 export function useTrackLastVisitedPath(currentPath: string): void {
   const prevPathRef = useRef<string>();
+  const normalizedPath = withoutBasePath(currentPath);
 
   // Update localStorage directly if path has changed
   if (
-    prevPathRef.current !== currentPath &&
-    isAllowedLoginRedirect(currentPath)
+    prevPathRef.current !== normalizedPath &&
+    isAllowedLoginRedirect(normalizedPath)
   ) {
-    prevPathRef.current = currentPath;
-    setPersistedState("lastVisitedPath", currentPath);
+    prevPathRef.current = normalizedPath;
+    setPersistedState("lastVisitedPath", normalizedPath);
   }
 }
 
@@ -59,12 +66,13 @@ export function useTrackLastVisitedPath(currentPath: string): void {
  */
 export function setPostLoginPath(path: string) {
   const key = "postLoginRedirectPath";
+  const normalizedPath = withoutBasePath(path);
 
-  if (isAllowedLoginRedirect(path)) {
-    setCookie(key, path, { expires: 1 });
+  if (isAllowedLoginRedirect(normalizedPath)) {
+    setCookie(key, normalizedPath, { expires: 1 });
 
     try {
-      sessionStorage.setItem(key, path);
+      sessionStorage.setItem(key, normalizedPath);
     } catch (_err) {
       // If the session storage is full or inaccessible, we can't do anything about it.
     }
@@ -89,7 +97,10 @@ export function usePostLoginPath() {
     }
 
     if (path) {
-      Logger.info("lifecycle", "Spending post login path", { path });
+      const normalizedPath = withoutBasePath(path);
+      Logger.info("lifecycle", "Spending post login path", {
+        path: normalizedPath,
+      });
 
       // Remove the cookie once the app has been navigated to the post login path. We dont
       // do this immediately as React StrictMode will render multiple times.
@@ -103,8 +114,8 @@ export function usePostLoginPath() {
         cleanup?.();
       });
 
-      if (isAllowedLoginRedirect(path)) {
-        return path;
+      if (isAllowedLoginRedirect(normalizedPath)) {
+        return normalizedPath;
       }
     }
 
