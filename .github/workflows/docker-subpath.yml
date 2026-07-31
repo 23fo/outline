@@ -19,7 +19,6 @@ concurrency:
 
 env:
   IMAGE_NAME: ghcr.io/23fo/outline
-  BASE_IMAGE_NAME: ghcr.io/23fo/outline-base
 
 jobs:
   build:
@@ -64,42 +63,24 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and publish base image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: Dockerfile.base
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ env.BASE_IMAGE_NAME }}:${{ steps.image.outputs.tag }}
-          cache-from: type=gha,scope=outline-subpath-base
-          cache-to: type=gha,mode=max,scope=outline-subpath-base
-
-      - name: Generate image metadata
-        id: meta
-        uses: docker/metadata-action@v6
-        with:
-          images: ${{ env.IMAGE_NAME }}
-          tags: |
-            type=raw,value=${{ steps.image.outputs.tag }}
-          labels: |
-            org.opencontainers.image.version=${{ steps.image.outputs.tag }}
-            org.opencontainers.image.source=https://github.com/23fo/outline
-
       - name: Build and publish image
         id: build
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          build-args: |
-            BASE_IMAGE=${{ env.BASE_IMAGE_NAME }}:${{ steps.image.outputs.tag }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=outline-subpath
-          cache-to: type=gha,mode=max,scope=outline-subpath
+        env:
+          IMAGE_TAG: ${{ steps.image.outputs.tag }}
+          GIT_SHA: ${{ github.sha }}
+        run: |
+          docker buildx bake \
+            --file docker-bake.subpath.hcl \
+            --metadata-file /tmp/build-metadata.json \
+            image
+
+          digest="$(jq -r '.image."containerimage.digest" // empty' /tmp/build-metadata.json)"
+          if [[ -z "${digest}" ]]; then
+            echo "Build completed without an image digest" >&2
+            exit 1
+          fi
+
+          echo "digest=${digest}" >> "$GITHUB_OUTPUT"
 
       - name: Publish build summary
         run: |
