@@ -2,15 +2,26 @@ import { escapeRegExp } from "es-toolkit/compat";
 import env from "../env";
 import { isBrowser } from "./browser";
 import { parseDomain } from "./domains";
+import { getBasePath, withBasePath, withoutBasePath } from "./subpath";
 
 /**
- * Prepends the CDN url to the given path (If a CDN is configured).
+ * Returns the base URL for app-served assets. A CDN takes precedence; without
+ * one, assets are served under the runtime app base path.
  *
- * @param path The path to prepend the CDN url to.
- * @returns The path with the CDN url prepended.
+ * @returns the asset base URL without a trailing slash.
+ */
+function assetBaseUrl(): string {
+  return env.CDN_URL || getBasePath();
+}
+
+/**
+ * Prepends the asset base URL to the given path.
+ *
+ * @param path The path to prepend the asset base URL to.
+ * @returns The path with the asset base URL prepended.
  */
 export function cdnPath(path: string): string {
-  return `${env.CDN_URL ?? ""}${path}`;
+  return `${assetBaseUrl()}${path}`;
 }
 
 /**
@@ -35,12 +46,10 @@ export function fileNameFromUrl(url: string) {
  * @returns True if the url is internal, false otherwise.
  */
 export function isInternalUrl(href: string) {
-  // empty strings are never internal
   if (href === "") {
     return false;
   }
 
-  // relative paths are always internal
   if (href[0] === "/") {
     return true;
   }
@@ -67,9 +76,10 @@ export function isInternalUrl(href: string) {
 export function isDocumentUrl(url: string) {
   try {
     const parsed = new URL(url, env.URL);
+    const pathname = withoutBasePath(parsed.pathname);
     return (
       isInternalUrl(url) &&
-      (parsed.pathname.startsWith("/doc/") || parsed.pathname.startsWith("/d/"))
+      (pathname.startsWith("/doc/") || pathname.startsWith("/d/"))
     );
   } catch (_err) {
     return false;
@@ -85,7 +95,10 @@ export function isDocumentUrl(url: string) {
 export function isCollectionUrl(url: string) {
   try {
     const parsed = new URL(url, env.URL);
-    return isInternalUrl(url) && parsed.pathname.startsWith("/collection/");
+    return (
+      isInternalUrl(url) &&
+      withoutBasePath(parsed.pathname).startsWith("/collection/")
+    );
   } catch (_err) {
     return false;
   }
@@ -127,7 +140,6 @@ export function isUrl(
   try {
     const url = new URL(text);
     const blockedProtocols = ["javascript:", "file:", "vbscript:", "data:"];
-
     if (blockedProtocols.includes(url.protocol)) {
       return false;
     }
@@ -239,7 +251,8 @@ export function sanitizeImageSrc(src: string | null | undefined) {
   if (allowedImageDataUris.some((scheme) => lower.startsWith(scheme))) {
     return src;
   }
-  return sanitizeUrl(src);
+
+  return sanitizeUrl(src.startsWith("/") ? withBasePath(src) : src);
 }
 
 /**
@@ -282,7 +295,6 @@ export function parseShareIdFromUrl(url: string): string | undefined {
   if (indexOfS >= 0) {
     const shareId = split[indexOfS + 1];
     if (shareId) {
-      // Remove trailing format like .md
       const dotIndex = shareId.indexOf(".");
       return dotIndex >= 0 ? shareId.substring(0, dotIndex) : shareId;
     }
