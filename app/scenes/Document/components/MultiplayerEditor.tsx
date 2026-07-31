@@ -18,6 +18,7 @@ import { EditorUpdateError } from "@shared/collaboration/CloseEvents";
 import History from "@shared/editor/extensions/History";
 import EDITOR_VERSION from "@shared/editor/version";
 import { supportsPassiveListener } from "@shared/utils/browser";
+import { collaborationUrl } from "@shared/utils/collaborationUrl";
 import type { Props as EditorProps } from "~/components/Editor";
 import Editor from "~/components/Editor";
 import type { Editor as SharedEditor } from "~/editor";
@@ -95,7 +96,7 @@ function MultiplayerEditor(
       parameters: {
         editorVersion: EDITOR_VERSION,
       },
-      url: `${env.COLLABORATION_URL}/collaboration`,
+      url: collaborationUrl(env.COLLABORATION_URL),
       name,
       document: ydoc,
       token,

@@ -2,12 +2,13 @@ import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { errToString } from "@shared/utils/error";
+import { resolveAppUrl } from "@shared/utils/subpath";
+import type { NavigationNode } from "@shared/types";
 import { Collection, Share, type Team, type User } from "@server/models";
 import { addTags } from "@server/logging/tracer";
 import { traceFunction } from "@server/logging/tracing";
 import { can } from "@server/policies";
 import { type APIContext, AuthenticationType } from "@server/types";
-import type { NavigationNode } from "@shared/types";
 
 interface McpContext {
   authInfo?: AuthInfo;
@@ -24,10 +25,10 @@ export function getActorFromContext(context: McpContext) {
 }
 
 /**
- * Constructs a minimal APIContext from the MCP request context for use with
+ * constructs a minimal APIContext from the MCP request context for use with
  * server commands that require a Koa-style context.
  *
- * @param context - the MCP request context.
+ * @param context the MCP request context.
  * @returns a partial APIContext suitable for command functions.
  */
 export function buildAPIContext(context: McpContext) {
@@ -44,6 +45,7 @@ export function buildAPIContext(context: McpContext) {
   return {
     state: { auth },
     context: { auth, ip },
+    request: { secure: false },
     cookies: { get: () => undefined, set: () => undefined },
   } as unknown as APIContext;
 }
@@ -383,10 +385,10 @@ function toShareUrlMap(team: Team, shares: Share[]): Map<string, string> {
 }
 
 /**
- * Utility function to construct a URL by joining a team URL with a path segment.
+ * constructs a URL by joining a team URL with a path segment.
  *
- * @param team - the team object containing the base URL.
- * @param input - an object with attributes keys to be joined with the team URL.
+ * @param team the team object containing the base URL.
+ * @param input an object with attribute keys to be joined with the team URL.
  * @returns the combined URL string.
  */
 export function pathToUrl(team: Team, input: Record<string, unknown>) {
@@ -398,7 +400,7 @@ export function pathToUrl(team: Team, input: Record<string, unknown>) {
       if (/^https?:\/\//.test(value)) {
         input[key] = value;
       } else {
-        input[key] = new URL(value, baseUrl).href;
+        input[key] = resolveAppUrl(value, baseUrl);
       }
     }
   }

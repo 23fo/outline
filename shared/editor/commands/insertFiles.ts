@@ -1,6 +1,7 @@
 import { t } from "i18next";
 import { v4 as uuidv4 } from "uuid";
 import type { EditorView } from "prosemirror-view";
+import { sanitizeImageSrc } from "../../utils/urls";
 import type { EditorNotice } from "../types";
 import FileHelper from "../lib/FileHelper";
 import uploadPlaceholderPlugin, {
@@ -173,7 +174,7 @@ const insertFiles = async function (
             throw new Error(`Error loading image: ${src}`);
           };
 
-          newImg.src = src;
+          newImg.src = sanitizeImageSrc(src) ?? src;
         } else if (upload.isVideo) {
           const result = findPlaceholder(view.state, upload.id);
           if (result === null) {
