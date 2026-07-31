@@ -9,13 +9,13 @@ import enforceHttps, {
   httpsResolver,
   xForwardedProtoResolver,
 } from "koa-sslify";
-import { withBasePath } from "@shared/utils/subpath";
 import { Second } from "@shared/utils/time";
 import env from "@server/env";
 import Logger from "@server/logging/Logger";
 import Metrics from "@server/logging/Metrics";
 import csp from "@server/middlewares/csp";
 import { attachCSRFToken } from "@server/middlewares/csrf";
+import subpathRedirect from "@server/middlewares/subpathRedirect";
 import ShutdownHelper, { ShutdownOrder } from "@server/utils/ShutdownHelper";
 import { initI18n } from "@server/utils/i18n";
 import routes from "../routes";
@@ -85,14 +85,7 @@ export default function init(app: Koa = new Koa(), server?: Server) {
 
   // Koa routes are defined relative to their mounted application. Normalize
   // root-relative redirects once at the web boundary.
-  app.use(async (ctx, next) => {
-    await next();
-
-    const location = ctx.response.get("Location");
-    if (basePath && location?.startsWith("/")) {
-      ctx.set("Location", withBasePath(location));
-    }
-  });
+  app.use(subpathRedirect(basePath));
 
   app.use(mount(`${basePath}/api`, api));
   app.use(mount(`${basePath}/mcp`, mcp));
