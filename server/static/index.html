@@ -18,7 +18,7 @@
         font-family: "Inter";
         font-display: swap;
         font-feature-settings: "ss03", "cv05";
-        src: url("{cdn-url}/fonts/Inter.var.woff2") format("woff2");
+        src: url("{asset-base}/fonts/Inter.var.woff2") format("woff2");
       }
 
       @font-face {
@@ -26,7 +26,7 @@
         font-display: swap;
         font-feature-settings: "ss03", "cv05";
         font-style: italic;
-        src: url("{cdn-url}/fonts/Inter-italic.var.woff2") format("woff2");
+        src: url("{asset-base}/fonts/Inter-italic.var.woff2") format("woff2");
       }
 
       body,
@@ -74,6 +74,14 @@
   <body>
     <div id="root"></div>
     {env}
+    <script nonce="{csp-nonce}">
+      // Resolve Vite's bundle-internal asset URLs at runtime. This keeps a
+      // prebuilt image portable between root and sub-path deployments.
+      window.__assetUrl = function (file) {
+        var e = window.env || {};
+        return (e.CDN_URL || e.BASE_PATH || "") + "/static/" + file;
+      };
+    </script>
     <script nonce="{csp-nonce}">
       if (
         window.localStorage &&
