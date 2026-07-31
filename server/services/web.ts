@@ -9,6 +9,7 @@ import enforceHttps, {
   httpsResolver,
   xForwardedProtoResolver,
 } from "koa-sslify";
+import { withBasePath } from "@shared/utils/subpath";
 import { Second } from "@shared/utils/time";
 import env from "@server/env";
 import Logger from "@server/logging/Logger";
@@ -82,28 +83,15 @@ export default function init(app: Koa = new Koa(), server?: Server) {
 
   const basePath = env.basePath;
 
-  // Koa routes are intentionally defined relative to their mounted application.
-  // Normalize any root-relative Location header after route handling so redirects
-  // from authentication, plugins, and APIs remain inside the configured subpath.
+  // Koa routes are defined relative to their mounted application. Normalize
+  // root-relative redirects once at the web boundary.
   app.use(async (ctx, next) => {
     await next();
 
-    if (!basePath) {
-      return;
-    }
-
     const location = ctx.response.get("Location");
-    if (
-      !location ||
-      !location.startsWith("/") ||
-      location.startsWith("//") ||
-      location === basePath ||
-      location.startsWith(`${basePath}/`)
-    ) {
-      return;
+    if (basePath && location.startsWith("/")) {
+      ctx.set("Location", withBasePath(location));
     }
-
-    ctx.set("Location", `${basePath}${location}`);
   });
 
   app.use(mount(`${basePath}/api`, api));

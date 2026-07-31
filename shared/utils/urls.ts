@@ -2,7 +2,7 @@ import { escapeRegExp } from "es-toolkit/compat";
 import env from "../env";
 import { isBrowser } from "./browser";
 import { parseDomain } from "./domains";
-import { getBasePath, withoutBasePath } from "./subpath";
+import { getBasePath, withBasePath, withoutBasePath } from "./subpath";
 
 /**
  * Returns the base URL for app-served assets. A CDN takes precedence; without
@@ -46,12 +46,10 @@ export function fileNameFromUrl(url: string) {
  * @returns True if the url is internal, false otherwise.
  */
 export function isInternalUrl(href: string) {
-  // empty strings are never internal
   if (href === "") {
     return false;
   }
 
-  // relative paths are always internal
   if (href[0] === "/") {
     return true;
   }
@@ -253,7 +251,8 @@ export function sanitizeImageSrc(src: string | null | undefined) {
   if (allowedImageDataUris.some((scheme) => lower.startsWith(scheme))) {
     return src;
   }
-  return sanitizeUrl(src);
+
+  return sanitizeUrl(src.startsWith("/") ? withBasePath(src) : src);
 }
 
 /**
@@ -296,7 +295,6 @@ export function parseShareIdFromUrl(url: string): string | undefined {
   if (indexOfS >= 0) {
     const shareId = split[indexOfS + 1];
     if (shareId) {
-      // Remove trailing format like .md
       const dotIndex = shareId.indexOf(".");
       return dotIndex >= 0 ? shareId.substring(0, dotIndex) : shareId;
     }

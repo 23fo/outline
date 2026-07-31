@@ -1,7 +1,6 @@
 import type MarkdownIt from "markdown-it";
 import type Token from "markdown-it/lib/token.mjs";
 import env from "../../env";
-import { withBasePath } from "../../utils/subpath";
 
 function isParagraph(token: Token) {
   return token.type === "paragraph_open";
@@ -28,8 +27,8 @@ function isAttachment(token: Token) {
   return (
     // internal
     // external (public share are pre-signed and this is a reasonable way of detecting them)
-    href?.startsWith(withBasePath("/api/attachments.redirect")) ||
-    href?.startsWith(withBasePath("/api/files.get")) ||
+    href?.startsWith("/api/attachments.redirect") ||
+    href?.startsWith("/api/files.get") ||
     href?.startsWith(`${env.URL}/api/files.get`) ||
     ((href?.startsWith(env.AWS_S3_UPLOAD_BUCKET_URL) ||
       href?.startsWith(env.AWS_S3_ACCELERATE_URL)) &&
