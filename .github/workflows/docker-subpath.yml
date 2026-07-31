@@ -1,0 +1,113 @@
+name: Build subpath Docker image
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_revision:
+        description: "Image revision suffix"
+        required: true
+        default: "v1"
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: docker-subpath-${{ github.ref }}-${{ inputs.image_revision }}
+  cancel-in-progress: false
+
+env:
+  IMAGE_NAME: ghcr.io/23fo/outline
+  BASE_IMAGE_NAME: ghcr.io/23fo/outline-base
+
+jobs:
+  build:
+    name: Build and publish
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+
+      - name: Resolve image tag
+        id: image
+        env:
+          IMAGE_REVISION: ${{ inputs.image_revision }}
+        run: |
+          ref="${GITHUB_REF_NAME}"
+          revision="${IMAGE_REVISION}"
+
+          if [[ ! "${ref}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-subpath-support$ ]]; then
+            echo "Invalid source ref: ${ref}" >&2
+            echo "Expected vX.Y.Z-subpath-support" >&2
+            exit 1
+          fi
+
+          if [[ ! "${revision}" =~ ^v[0-9]+$ ]]; then
+            echo "Invalid image revision: ${revision}" >&2
+            echo "Expected vN" >&2
+            exit 1
+          fi
+
+          echo "tag=${ref}-${revision}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and publish base image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.base
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ env.BASE_IMAGE_NAME }}:${{ steps.image.outputs.tag }}
+          cache-from: type=gha,scope=outline-subpath-base
+          cache-to: type=gha,mode=max,scope=outline-subpath-base
+
+      - name: Generate image metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ steps.image.outputs.tag }}
+          labels: |
+            org.opencontainers.image.version=${{ steps.image.outputs.tag }}
+            org.opencontainers.image.source=https://github.com/23fo/outline
+
+      - name: Build and publish image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: |
+            BASE_IMAGE=${{ env.BASE_IMAGE_NAME }}:${{ steps.image.outputs.tag }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=outline-subpath
+          cache-to: type=gha,mode=max,scope=outline-subpath
+
+      - name: Publish build summary
+        run: |
+          {
+            echo "## Docker image published"
+            echo
+            echo "- Source ref: \`${GITHUB_REF_NAME}\`"
+            echo "- Image: \`${IMAGE_NAME}:${{ steps.image.outputs.tag }}\`"
+            echo "- Platforms: \`linux/amd64\`, \`linux/arm64\`"
+            echo "- Digest: \`${{ steps.build.outputs.digest }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
