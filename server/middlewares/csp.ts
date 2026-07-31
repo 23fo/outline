@@ -69,10 +69,13 @@ export function allowStyleSrc(ctx: Context, sources: string[]) {
  */
 export default function createCSPMiddleware(options?: CSPOptions) {
   // Construct scripts CSP based on options in use
+  // CSP host sources must not include the app base path; otherwise sub-path
+  // assets such as /outline/static/* may be blocked by the browser.
+  const origin = new URL(env.URL).origin;
   const defaultSrc: string[] = ["'self'"];
   const scriptSrc: string[] = [];
   const styleSrc: string[] = ["'self'", "'unsafe-inline'"];
-  const objectSrc: string[] = [env.URL, "'self'"];
+  const objectSrc: string[] = [origin, "'self'"];
 
   if (env.isCloudHosted) {
     scriptSrc.push("www.googletagmanager.com");
@@ -82,10 +85,10 @@ export default function createCSPMiddleware(options?: CSPOptions) {
 
   // Allow to load assets from Vite
   if (!env.isProduction) {
-    scriptSrc.push(env.URL.replace(`:${env.PORT}`, ":3001"));
+    scriptSrc.push(origin.replace(`:${env.PORT}`, ":3001"));
     scriptSrc.push("localhost:3001");
   } else {
-    scriptSrc.push(env.URL);
+    scriptSrc.push(origin);
   }
 
   if (env.GOOGLE_ANALYTICS_ID) {

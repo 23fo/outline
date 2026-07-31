@@ -15,6 +15,7 @@ import Logger from "@server/logging/Logger";
 import Metrics from "@server/logging/Metrics";
 import csp from "@server/middlewares/csp";
 import { attachCSRFToken } from "@server/middlewares/csrf";
+import subpathRedirect from "@server/middlewares/subpathRedirect";
 import ShutdownHelper, { ShutdownOrder } from "@server/utils/ShutdownHelper";
 import { initI18n } from "@server/utils/i18n";
 import routes from "../routes";
@@ -80,8 +81,14 @@ export default function init(app: Koa = new Koa(), server?: Server) {
     Metrics.gaugePerInstance("connections.count", 0);
   });
 
-  app.use(mount("/api", api));
-  app.use(mount("/mcp", mcp));
+  const basePath = env.basePath;
+
+  // Koa routes are defined relative to their mounted application. Normalize
+  // root-relative redirects once at the web boundary.
+  app.use(subpathRedirect(basePath));
+
+  app.use(mount(`${basePath}/api`, api));
+  app.use(mount(`${basePath}/mcp`, mcp));
 
   // Generate and attach a CSRF token to the session on non-API requests
   app.use(attachCSRFToken());
@@ -102,9 +109,9 @@ export default function init(app: Koa = new Koa(), server?: Server) {
     })
   );
 
-  app.use(mount("/auth", auth));
-  app.use(mount("/oauth", oauth));
-  app.use(mount(routes));
+  app.use(mount(`${basePath}/auth`, auth));
+  app.use(mount(`${basePath}/oauth`, oauth));
+  app.use(basePath ? mount(basePath, routes) : mount(routes));
 
   return app;
 }

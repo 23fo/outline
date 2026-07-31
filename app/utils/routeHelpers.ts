@@ -1,4 +1,5 @@
 import queryString from "query-string";
+import { withBasePath } from "@shared/utils/subpath";
 import type Collection from "~/models/Collection";
 import type Comment from "~/models/Comment";
 import type Document from "~/models/Document";
@@ -306,7 +307,8 @@ export function sharedModelPath(shareId: string, modelPath?: string) {
 }
 
 /**
- * Converts a path to a full URL by prepending an origin.
+ * Converts a path to a full URL by prepending an origin and the runtime base
+ * path. Already-prefixed paths are preserved.
  *
  * @param path the path to convert.
  * @param origin optional origin to use instead of `window.location.origin`.
@@ -316,7 +318,7 @@ export function urlify(
   path: string,
   origin: string = window.location.origin
 ): string {
-  return `${origin}${path}`;
+  return `${origin}${withBasePath(path)}`;
 }
 
 /**
