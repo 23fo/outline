@@ -1,7 +1,6 @@
 import * as React from "react";
 import styled, { css } from "styled-components";
-import { withBasePath } from "../../utils/subpath";
-import { sanitizeUrl } from "../../utils/urls";
+import { sanitizeResourceUrl } from "../../utils/resourceUrl";
 import type { ComponentProps } from "../types";
 import { ResizeLeft, ResizeRight } from "./ResizeHandle";
 import useDragResize from "./hooks/useDragResize";
@@ -34,9 +33,6 @@ export default function Video(props: Props) {
     maxHeight: height || "auto",
     pointerEvents: dragging ? "none" : "all",
   };
-  const src = node.attrs.src?.startsWith("/")
-    ? withBasePath(node.attrs.src)
-    : node.attrs.src;
 
   return (
     <div contentEditable={false} ref={ref}>
@@ -46,7 +42,7 @@ export default function Video(props: Props) {
         style={style}
       >
         <StyledVideo
-          src={sanitizeUrl(src)}
+          src={sanitizeResourceUrl(node.attrs.src)}
           title={node.attrs.title}
           style={style}
           controls={!dragging}
