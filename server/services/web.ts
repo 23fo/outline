@@ -89,7 +89,7 @@ export default function init(app: Koa = new Koa(), server?: Server) {
     await next();
 
     const location = ctx.response.get("Location");
-    if (basePath && location.startsWith("/")) {
+    if (basePath && location?.startsWith("/")) {
       ctx.set("Location", withBasePath(location));
     }
   });
