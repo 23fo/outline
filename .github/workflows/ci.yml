@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [v1.9.2-subpath-support]
   pull_request:
-    branches: [main]
+    branches: [v1.9.2-subpath-support]
 
 env:
   NODE_ENV: test
