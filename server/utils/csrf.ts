@@ -1,18 +1,21 @@
 import { randomBytes, createHmac } from "node:crypto";
 import type { Context } from "koa";
-import { CSRF } from "@shared/constants";
+import { getCSRFTokenCookieName } from "@shared/utils/csrf";
+import env from "@server/env";
 import { safeEqual } from "./crypto";
 
 /**
- * Reads the CSRF token from the request cookies, preferring the host-bound cookie
+ * reads the CSRF token from the request cookies.
  *
- * @param ctx The request context
- * @returns The token, or undefined when no CSRF cookie is present.
+ * @param ctx the request context.
+ * @returns the token, or undefined when no CSRF cookie is present.
  */
 export const getTokenFromCookie = (
-  ctx: Pick<Context, "cookies">
-): string | undefined =>
-  ctx.cookies.get(CSRF.secureCookieName) ?? ctx.cookies.get(CSRF.cookieName);
+  ctx: Pick<Context, "cookies" | "request">
+): string | undefined => {
+  const cookieName = getCSRFTokenCookieName(ctx.request.secure, env.basePath);
+  return ctx.cookies.get(cookieName);
+};
 
 /**
  * Generates cryptographically secure random bytes
