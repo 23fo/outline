@@ -7,6 +7,7 @@ import { Throttle } from "@hocuspocus/extension-throttle";
 import { Server } from "@hocuspocus/server";
 import type Koa from "koa";
 import WebSocket from "ws";
+import { collaborationPath } from "@shared/utils/collaborationUrl";
 import { DocumentValidation } from "@shared/validations";
 import { APIUpdateExtension } from "@server/collaboration/APIUpdateExtension";
 import { ConnectionLimitExtension } from "@server/collaboration/ConnectionLimitExtension";
@@ -26,7 +27,7 @@ export default function init(
   server: http.Server,
   serviceNames: string[]
 ) {
-  const path = `${env.basePath}/collaboration`;
+  const path = collaborationPath(env.COLLABORATION_URL);
   const wss = new WebSocket.Server({
     noServer: true,
     maxPayload: DocumentValidation.maxStateLength,

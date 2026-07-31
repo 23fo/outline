@@ -23,6 +23,7 @@ import api from "../routes/api";
 import auth from "../routes/auth";
 import mcp from "../routes/mcp";
 import oauth from "../routes/oauth";
+import wellKnown from "../routes/wellKnown";
 import type { UserAgentContext } from "koa-useragent";
 import userAgent from "koa-useragent";
 
@@ -87,6 +88,7 @@ export default function init(app: Koa = new Koa(), server?: Server) {
   // root-relative redirects once at the web boundary.
   app.use(subpathRedirect(basePath));
 
+  app.use(mount(wellKnown));
   app.use(mount(`${basePath}/api`, api));
   app.use(mount(`${basePath}/mcp`, mcp));
 

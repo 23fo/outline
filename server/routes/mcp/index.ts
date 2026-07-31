@@ -8,6 +8,7 @@ import { ErrorCode } from "@modelcontextprotocol/sdk/types.js";
 import { toError } from "@shared/utils/error";
 import { TeamPreference } from "@shared/types";
 import { iconNames } from "@shared/utils/IconNames";
+import { protectedResourceMetadataPath } from "@shared/utils/oauthMetadata";
 import { NotFoundError } from "@server/errors";
 import env from "@server/env";
 import Logger from "@server/logging/Logger";
@@ -51,10 +52,12 @@ app.use(async (ctx, next) => {
         const origin = env.isCloudHosted
           ? ctx.request.URL.origin
           : new URL(env.URL).origin;
-        const base = `${origin}${env.basePath}`;
+        const metadataPath = protectedResourceMetadataPath(
+          `${env.basePath}/mcp`
+        );
         headersHost.headers = {
           ...existingHeaders,
-          "WWW-Authenticate": `Bearer resource_metadata="${base}/.well-known/oauth-protected-resource/mcp"`,
+          "WWW-Authenticate": `Bearer resource_metadata="${origin}${metadataPath}"`,
         };
       }
     }

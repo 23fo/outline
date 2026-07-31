@@ -1,4 +1,5 @@
 import type { Team } from "@server/models";
+import presentedTeamUrl from "@server/utils/presentedTeamUrl";
 
 export default function presentTeam(team: Team) {
   return {
@@ -15,7 +16,7 @@ export default function presentTeam(team: Team) {
     passkeysEnabled: team.passkeysEnabled,
     subdomain: team.subdomain,
     domain: team.domain,
-    url: team.url,
+    url: presentedTeamUrl(team),
     defaultUserRole: team.defaultUserRole,
     inviteRequired: team.inviteRequired,
     allowedDomains: team.allowedDomains?.map((d) => d.name),

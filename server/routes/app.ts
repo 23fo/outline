@@ -24,7 +24,9 @@ import { loadPublicShare } from "@server/commands/shareLoader";
 
 const readFile = util.promisify(fs.readFile);
 const entry = "app/index.tsx";
-const viteHost = env.URL.replace(`:${env.PORT}`, ":3001");
+const viteUrl = new URL(env.URL);
+viteUrl.port = "3001";
+const viteHost = viteUrl.origin;
 
 let indexHtmlCache: Buffer | undefined;
 

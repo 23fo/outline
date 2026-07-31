@@ -43,13 +43,15 @@ function hasBasePathPrefix(path: string, basePath: string): boolean {
  * Absolute URLs, protocol-relative URLs, and already-prefixed paths are
  * returned unchanged.
  */
-export function withBasePath(path: string): string {
+export function withBasePath(
+  path: string,
+  basePath: string = getBasePath()
+): string {
   if (!path || /^[a-z][a-z\d+.-]*:/i.test(path) || path.startsWith("//")) {
     return path;
   }
 
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  const basePath = getBasePath();
 
   if (!basePath || hasBasePathPrefix(normalizedPath, basePath)) {
     return normalizedPath;

@@ -10,7 +10,7 @@ export default function subpathRedirect(basePath: string): Middleware {
 
     const location = ctx.response.get("Location");
     if (basePath && location?.startsWith("/")) {
-      ctx.set("Location", withBasePath(location));
+      ctx.set("Location", withBasePath(location, basePath));
     }
   };
 }
