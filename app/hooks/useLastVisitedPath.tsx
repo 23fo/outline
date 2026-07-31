@@ -1,5 +1,6 @@
 import { useCallback, useRef } from "react";
 import { getCookie, removeCookie, setCookie } from "tiny-cookie";
+import { withoutBasePath } from "@shared/utils/subpath";
 import usePersistedState, {
   setPersistedState,
 } from "~/hooks/usePersistedState";
@@ -42,7 +43,6 @@ export function useLastVisitedPath(): [string, (path: string) => void] {
 export function useTrackLastVisitedPath(currentPath: string): void {
   const prevPathRef = useRef<string>();
 
-  // Update localStorage directly if path has changed
   if (
     prevPathRef.current !== currentPath &&
     isAllowedLoginRedirect(currentPath)
@@ -59,12 +59,13 @@ export function useTrackLastVisitedPath(currentPath: string): void {
  */
 export function setPostLoginPath(path: string) {
   const key = "postLoginRedirectPath";
+  const normalizedPath = withoutBasePath(path);
 
-  if (isAllowedLoginRedirect(path)) {
-    setCookie(key, path, { expires: 1 });
+  if (isAllowedLoginRedirect(normalizedPath)) {
+    setCookie(key, normalizedPath, { expires: 1 });
 
     try {
-      sessionStorage.setItem(key, path);
+      sessionStorage.setItem(key, normalizedPath);
     } catch (_err) {
       // If the session storage is full or inaccessible, we can't do anything about it.
     }
