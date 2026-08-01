@@ -278,7 +278,8 @@ class Team extends ParanoidModel<
 
     // custom domain
     if (this.domain) {
-      return `${url.protocol}//${this.domain}${url.port ? `:${url.port}` : ""}`;
+      url.hostname = this.domain;
+      return url.href.replace(/\/$/, "");
     }
 
     if (!this.subdomain || !env.isCloudHosted) {
@@ -343,10 +344,10 @@ class Team extends ParanoidModel<
   };
 
   /**
-   * Returns the value of the given preference.
+   * Returns the value of the given team preference.
    *
-   * @param preference The team preference to retrieve
-   * @returns The preference value if set, else the default value
+   * @param preference The preference to retrieve.
+   * @returns The current preference value.
    */
   public getPreference = (preference: TeamPreference) =>
     this.preferences?.[preference] ??
@@ -358,7 +359,7 @@ class Team extends ParanoidModel<
    * to the team members.
    *
    * @param flag The flag to set
-   * @param value Set the flag to true/false
+   * @param value Sets the flag to true/false
    * @returns The current team flags
    */
   public setFlag = (flag: TeamFlag, value = true) => {
