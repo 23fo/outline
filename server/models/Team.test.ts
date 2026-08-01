@@ -1,12 +1,35 @@
 import { randomUUID } from "node:crypto";
 import { Team } from "@server/models";
+import env from "@server/env";
 import {
   buildTeam,
   buildCollection,
   buildAttachment,
 } from "@server/test/factories";
 
+const originalUrl = env.URL;
+
+afterEach(() => {
+  env.URL = originalUrl;
+});
+
 describe("Team", () => {
+  describe("url", () => {
+    it("preserves the application subpath for custom domains", async () => {
+      env.URL = "https://app.example.com:3000/outline";
+      const team = await buildTeam({ domain: "docs.example.com" });
+
+      expect(team.url).toBe("https://docs.example.com:3000/outline");
+    });
+
+    it("leaves root deployments unchanged for custom domains", async () => {
+      env.URL = "https://app.example.com";
+      const team = await buildTeam({ domain: "docs.example.com" });
+
+      expect(team.url).toBe("https://docs.example.com");
+    });
+  });
+
   describe("findByDomain", () => {
     it("should find a team by its domain", async () => {
       const domain = `${randomUUID()}.example.com`;
