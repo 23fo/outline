@@ -1,5 +1,21 @@
 import { escape } from "es-toolkit/compat";
 import type { Context } from "koa";
+import { withBasePath } from "@shared/utils/subpath";
+import env from "@server/env";
+
+/**
+ * Resolves a browser redirect URL against the configured application subpath.
+ *
+ * @param url the redirect URL.
+ * @param basePath the configured application base path.
+ * @returns the normalized redirect URL.
+ */
+export function resolveClientRedirectUrl(
+  url: string,
+  basePath: string
+): string {
+  return url.startsWith("/") ? withBasePath(url, basePath) : url;
+}
 
 /**
  * Performs a redirect on the browser so that the user's auth cookies are
@@ -15,10 +31,11 @@ export function redirectOnClient(
   method: "GET" | "POST" = "GET"
 ) {
   this.type = "text/html";
+  const redirectUrl = resolveClientRedirectUrl(url, env.basePath);
 
   if (method === "POST") {
     // For POST method, create a form that auto-submits
-    const urlObj = new URL(url);
+    const urlObj = new URL(redirectUrl, this.request.origin);
     const formAction = `${urlObj.origin}${urlObj.pathname}`;
     const searchParams = urlObj.searchParams;
 
@@ -63,7 +80,7 @@ export function redirectOnClient(
     this.body = `
 <html lang="en">
 <head>
-<meta http-equiv="refresh" content="0;URL='${escape(url)}'" />
+<meta http-equiv="refresh" content="0;URL='${escape(redirectUrl)}'" />
 </head>
 </html>`;
   }
