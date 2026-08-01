@@ -24,13 +24,30 @@ describe("#sharedDocumentPath", () => {
 });
 
 describe("#urlify", () => {
-  it("does not duplicate the configured subpath in a full host URL", () => {
+  beforeEach(() => {
     env.BASE_PATH = "/outline";
     sharedEnv.BASE_PATH = "/outline";
+  });
 
+  it("does not duplicate the configured subpath in a full host URL", () => {
     expect(
       urlify("/doc/test-DjDlkBi77t", "https://docs.example.com/outline")
     ).toBe("https://docs.example.com/outline/doc/test-DjDlkBi77t");
+  });
+
+  it("does not duplicate an already-prefixed application path", () => {
+    expect(
+      urlify(
+        "/outline/doc/test-DjDlkBi77t",
+        "https://docs.example.com/outline"
+      )
+    ).toBe("https://docs.example.com/outline/doc/test-DjDlkBi77t");
+  });
+
+  it("preserves the subpath in share canonical URLs", () => {
+    expect(urlify("/s/share-id", "https://docs.example.com")).toBe(
+      "https://docs.example.com/outline/s/share-id"
+    );
   });
 });
 
@@ -54,5 +71,17 @@ describe("#desktopify", () => {
     expect(
       desktopify("/doc/test-DjDlkBi77t", "https://docs.example.com/outline")
     ).toBe("outline://docs.example.com/outline/doc/test-DjDlkBi77t");
+  });
+
+  it("preserves the subpath in desktop authentication redirects", () => {
+    env.BASE_PATH = "/outline";
+    sharedEnv.BASE_PATH = "/outline";
+
+    expect(
+      desktopify(
+        "/auth/redirect?token=test",
+        "https://docs.example.com/outline"
+      )
+    ).toBe("outline://docs.example.com/outline/auth/redirect?token=test");
   });
 });
