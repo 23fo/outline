@@ -19,6 +19,17 @@ describe("presentedTeamUrl", () => {
     ).toBe("https://docs.example.com/outline");
   });
 
+  it("does not duplicate an existing application subpath", () => {
+    env.URL = "https://app.example.com/outline";
+
+    expect(
+      presentedTeamUrl({
+        domain: "docs.example.com",
+        url: "https://docs.example.com/outline",
+      })
+    ).toBe("https://docs.example.com/outline");
+  });
+
   it("leaves root deployments unchanged", () => {
     env.URL = "https://app.example.com";
 
