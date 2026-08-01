@@ -318,7 +318,7 @@ export function urlify(
   path: string,
   origin: string = window.location.origin
 ): string {
-  return `${origin}${withBasePath(path)}`;
+  return new URL(withBasePath(path), origin).toString();
 }
 
 /**
