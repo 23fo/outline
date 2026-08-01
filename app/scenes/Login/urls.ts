@@ -1,3 +1,4 @@
+import { withoutBasePath } from "@shared/utils/subpath";
 import Desktop from "~/utils/Desktop";
 
 /** The hostname of the default Outline cloud installation. */
@@ -13,6 +14,18 @@ function validateAndEncodeSubdomain(subdomain: string): string {
     throw new Error("Invalid subdomain");
   }
   return `https://${encodedSubdomain}.getoutline.com`;
+}
+
+/**
+ * Builds the URL used to continue the current flow on another workspace.
+ *
+ * @param teamUrl the destination workspace URL, including its application subpath.
+ * @param currentUrl the current browser URL.
+ * @returns the destination URL with the current application-relative path.
+ */
+export function teamSwitcherUrl(teamUrl: string, currentUrl: string): string {
+  const url = new URL(currentUrl);
+  return `${teamUrl}${withoutBasePath(url.pathname)}${url.search}${url.hash}`;
 }
 
 /**
