@@ -5,6 +5,7 @@ import type { EditorView } from "prosemirror-view";
 import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import styled from "styled-components";
+import { withBasePath } from "@shared/utils/subpath";
 import Flex from "~/components/Flex";
 import Tooltip from "~/components/Tooltip";
 import Input from "~/editor/components/Input";
@@ -53,7 +54,7 @@ export function MediaLinkEditor({
   }, [view]);
 
   const openLink = useCallback(() => {
-    window.open(url, "_blank");
+    window.open(url.startsWith("/") ? withBasePath(url) : url, "_blank");
   }, [url]);
 
   const remove = useCallback(() => {
