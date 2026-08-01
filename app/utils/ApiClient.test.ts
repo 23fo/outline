@@ -15,7 +15,7 @@ afterEach(() => {
 describe("ApiClient", () => {
   it("prefixes root-relative base URL overrides with the application subpath", async () => {
     const fetchMock = vi
-      .spyOn(globalThis, "fetch")
+      .spyOn(window, "fetch")
       .mockResolvedValue(new Response(null, { status: 204 }));
 
     await client.post(
@@ -35,7 +35,7 @@ describe("ApiClient", () => {
 
   it("does not duplicate an existing application subpath", async () => {
     const fetchMock = vi
-      .spyOn(globalThis, "fetch")
+      .spyOn(window, "fetch")
       .mockResolvedValue(new Response(null, { status: 204 }));
 
     await client.post("/passkeys.verifyRegistration", undefined, {
@@ -51,7 +51,7 @@ describe("ApiClient", () => {
 
   it("leaves absolute base URL overrides unchanged", async () => {
     const fetchMock = vi
-      .spyOn(globalThis, "fetch")
+      .spyOn(window, "fetch")
       .mockResolvedValue(new Response(null, { status: 204 }));
 
     await client.post("/endpoint", undefined, {
@@ -68,7 +68,7 @@ describe("ApiClient", () => {
   it("leaves root deployments unchanged", async () => {
     env.BASE_PATH = "";
     const fetchMock = vi
-      .spyOn(globalThis, "fetch")
+      .spyOn(window, "fetch")
       .mockResolvedValue(new Response(null, { status: 204 }));
 
     await client.post("/passkeys.generateRegistrationOptions", undefined, {
