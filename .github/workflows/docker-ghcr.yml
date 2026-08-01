@@ -1,20 +1,14 @@
-name: Build subpath Docker image
+name: Build GHCR Docker image
 
 on:
   workflow_dispatch:
-    inputs:
-      image_revision:
-        description: "Image revision suffix"
-        required: true
-        default: "v1"
-        type: string
 
 permissions:
   contents: read
   packages: write
 
 concurrency:
-  group: docker-subpath-${{ github.ref }}-${{ inputs.image_revision }}
+  group: docker-subpath-${{ github.ref }}
   cancel-in-progress: false
 
 env:
@@ -30,25 +24,16 @@ jobs:
 
       - name: Resolve image tag
         id: image
-        env:
-          IMAGE_REVISION: ${{ inputs.image_revision }}
         run: |
           ref="${GITHUB_REF_NAME}"
-          revision="${IMAGE_REVISION}"
 
-          if [[ ! "${ref}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-subpath-support$ ]]; then
+          if [[ ! "${ref}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
             echo "Invalid source ref: ${ref}" >&2
-            echo "Expected vX.Y.Z-subpath-support" >&2
+            echo "Expected vX.Y.Z*" >&2
             exit 1
           fi
 
-          if [[ ! "${revision}" =~ ^v[0-9]+$ ]]; then
-            echo "Invalid image revision: ${revision}" >&2
-            echo "Expected vN" >&2
-            exit 1
-          fi
-
-          echo "tag=${ref}-${revision}" >> "$GITHUB_OUTPUT"
+          echo "tag=${ref}" >> "$GITHUB_OUTPUT"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -71,6 +56,7 @@ jobs:
         run: |
           docker buildx bake \
             --file docker-bake.subpath.hcl \
+            --provenance=false \
             --metadata-file /tmp/build-metadata.json \
             image
 
