@@ -6,6 +6,7 @@ import parseDocumentSlug from "@shared/utils/parseDocumentSlug";
 import stores from "~/stores";
 import HoverPreview from "~/components/HoverPreview";
 import env from "~/env";
+import { urlify } from "~/utils/routeHelpers";
 
 /**
  * Options for the HoverPreviews extension.
@@ -68,7 +69,7 @@ export default class HoverPreviews extends Extension<HoverPreviewsOptions> {
 
                     if (url) {
                       const transformedUrl = url.startsWith("/")
-                        ? env.URL + url
+                        ? urlify(url, env.URL)
                         : url;
 
                       this.state.dataLoading = true;
