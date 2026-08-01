@@ -32,8 +32,10 @@ async function getContentSecurityPolicy(url: string): Promise<string | null> {
         "x-forwarded-host": "docs.example.com",
       },
     });
+    const policy = response.headers.get("content-security-policy");
+    await response.text();
 
-    return response.headers.get("content-security-policy");
+    return policy;
   } finally {
     await new Promise<void>((resolve) => server.close(() => resolve()));
   }
