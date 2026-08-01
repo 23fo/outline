@@ -5,6 +5,17 @@ import { InvalidRequestError } from "@server/errors";
 import { allowScriptSrc, allowStyleSrc } from "@server/middlewares/csp";
 
 /**
+ * Returns the application root used when an embed is opened outside an iframe.
+ *
+ * @param origin the current request origin.
+ * @param basePath the configured application base path.
+ * @returns the application root with a trailing slash.
+ */
+export function embedAppRoot(origin: string, basePath: string): string {
+  return `${origin}${basePath}/`;
+}
+
+/**
  * Resize observer script that sends a message to the parent window when content is resized. Inject
  * this script into the iframe to receive resize events.
  */
@@ -21,15 +32,19 @@ const resizeObserverScript = (
 
 /**
  * Script that checks if the iframe is being loaded in an iframe. If it is not, it redirects to the
- * origin URL.
+ * application root.
  */
-const iframeCheckScript = (
-  ctx: Context
-) => `<script nonce="${ctx.state.cspNonce}">
+const iframeCheckScript = (ctx: Context) => {
+  const appRoot = JSON.stringify(
+    embedAppRoot(ctx.request.origin, env.basePath)
+  ).replace(/</g, "\\u003c");
+
+  return `<script nonce="${ctx.state.cspNonce}">
   if (window.self === window.top) {
-    window.location.href = window.location.origin;
+    window.location.href = ${appRoot};
   }
 </script>`;
+};
 
 /**
  * Render an embed for a GitLab or GitHub snippet, injecting the necessary scripts to handle resizing
