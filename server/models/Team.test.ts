@@ -17,16 +17,18 @@ describe("Team", () => {
   describe("url", () => {
     it("preserves the application subpath for custom domains", async () => {
       env.URL = "https://app.example.com:3000/outline";
-      const team = await buildTeam({ domain: "docs.example.com" });
+      const domain = `${randomUUID()}.example.com`;
+      const team = await buildTeam({ domain });
 
-      expect(team.url).toBe("https://docs.example.com:3000/outline");
+      expect(team.url).toBe(`https://${domain}:3000/outline`);
     });
 
     it("leaves root deployments unchanged for custom domains", async () => {
       env.URL = "https://app.example.com";
-      const team = await buildTeam({ domain: "docs.example.com" });
+      const domain = `${randomUUID()}.example.com`;
+      const team = await buildTeam({ domain });
 
-      expect(team.url).toBe("https://docs.example.com");
+      expect(team.url).toBe(`https://${domain}`);
     });
   });
 
